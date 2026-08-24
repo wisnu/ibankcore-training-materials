@@ -66,7 +66,7 @@ box(ax, 0.5, 2.35, 12.5, 4.0, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
 ax.text(0.85, 6.05, "IBANKCORE  (Core Banking System)", fontsize=12, fontweight="bold", color=BLUE)
 
 modules = [
-    "Funding", "Financing", "Accounting", "Cash\nManagement",
+    "Funding", "Financing", "Accounting", "Kas & Vault\n(Teller/ATM)",
     "Remittance", "Internal\nAccount", "Customer", "Enterprise"
 ]
 mw, mh = 1.42, 1.15
@@ -144,14 +144,14 @@ fig.savefig("diagrams/02_alur_double_entry.png", dpi=200, bbox_inches="tight", f
 plt.close(fig)
 
 # =====================================================================
-# DIAGRAM 3 — Integrasi dengan Sistem Sekitar (Treasury / Cash Mgmt / Remittance)
+# DIAGRAM 3 — Integrasi dengan Sistem Sekitar (Treasury / Kas & Vault / Remittance)
 # =====================================================================
 fig, ax = new_fig(13, 8)
 ax.text(6.5, 7.55, "Integrasi IBANKCORE dengan Sistem Sekitar", ha="center", fontsize=16, fontweight="bold", color=NAVY)
-ax.text(6.5, 7.12, "Cash Management, Treasury & Remittance", ha="center", fontsize=10.5, color=GREY)
+ax.text(6.5, 7.12, "Kas & Vault, Treasury & Remittance", ha="center", fontsize=10.5, color=GREY)
 
 # center core
-box(ax, 5.15, 3.55, 2.7, 1.3, "IBANKCORE\n(Cash Mgmt /\nTreasury / Remittance)", fc=NAVY, ec=NAVY, tc=WHITE, fs=9.8)
+box(ax, 5.15, 3.55, 2.7, 1.3, "IBANKCORE\n(Kas & Vault /\nTreasury / Remittance)", fc=NAVY, ec=NAVY, tc=WHITE, fs=9.8)
 
 left_items = [
     ("Teller / Vault /\nATM (CASH_POINT)", 5.9),

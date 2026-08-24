@@ -20,7 +20,7 @@ cards:
     heading: Modul Funding
     text: Produk simpanan nasabah
   - num: "04"
-    heading: Treasury / Cash Mgmt
+    heading: Treasury / Kas & Vault
     text: CASH_POINT & likuiditas
   - num: "05"
     heading: Integrasi Sistem Sekitar
@@ -28,6 +28,20 @@ cards:
   - num: "06"
     heading: Contoh Proses Bisnis
     text: Setor Tunai & Pindah Buku
+===
+layout: cards
+kicker: Agenda (Lanjutan)
+title: Materi Tambahan
+cards:
+  - num: "07"
+    heading: Produk & Layanan Tambahan
+    text: Deposito, Kliring, QRIS, VA, Corporate, dsb.
+  - num: "08"
+    heading: Batch & Kontinuitas Layanan
+    text: EOD/BOD, backup & disaster recovery
+  - num: "09"
+    heading: Keamanan & Audit Lanjutan
+    text: Maker-checker, security, biometrik
 ===
 layout: image
 kicker: Bagian 1
@@ -41,7 +55,7 @@ rows:
   - ["Funding", "Produk pendanaan/simpanan (tabungan, giro, deposito)"]
   - ["Financing", "Pembiayaan, termasuk skema syariah (Murabahah, Ijarah, Kafalah)"]
   - ["Accounting", "Pencatatan double-entry & buku besar"]
-  - ["Cash Management", "Kas fisik: teller, vault, ATM, sundry"]
+  - ["Kas & Vault (Teller/ATM)", "Kas fisik: teller, vault, ATM, sundry"]
   - ["Remittance", "Transfer antar bank: SKN, RTGS, BI-FAST"]
   - ["Internal Account", "Rekening internal bank (GL, suspense)"]
   - ["Customer", "Data induk nasabah (CIF)"]
@@ -86,12 +100,12 @@ cards:
     text: "Perhitungan sesuai jenis produk, konvensional maupun syariah"
   - heading: Mutasi Transaksi
     text: "Setoran, penarikan, pemindahbukuan — tercatat via modul Accounting"
-  - heading: Keterkaitan Cash Mgmt
+  - heading: Keterkaitan Kas & Vault
     text: "Transaksi tunai berinteraksi dengan CASH_POINT (teller/ATM)"
 ===
 layout: two-column
 kicker: Bagian 4
-title: Treasury / Cash Management
+title: Treasury / Kas & Vault (Teller/ATM)
 left:
   panel: light
   heading: Abstraksi CASH_POINT
@@ -103,7 +117,7 @@ right:
     - "Pengelolaan likuiditas harian & posisi kas bank"
     - "Rekonsiliasi kas fisik terhadap catatan sistem"
     - "Interaksi dengan Remittance untuk settlement lintas bank"
-  note: "Cash Management ⇄ Treasury ⇄ Remittance bekerja sebagai satu kesatuan untuk menjaga likuiditas & settlement bank."
+  note: "Kas & Vault ⇄ Treasury ⇄ Remittance menjaga likuiditas & settlement bank. Bukan 'Cash Management System' portal korporat — ini kas fisik cabang."
 ===
 layout: image
 kicker: Bagian 5
@@ -145,7 +159,7 @@ left:
     - "Mutasi DR pada rekening sumber"
     - "Mutasi CR pada rekening tujuan"
     - "Terjadi secara atomik (bersamaan)"
-    - "Tanpa melibatkan modul Cash Management (tidak ada kas fisik)"
+    - "Tanpa melibatkan modul Kas & Vault (tidak ada kas fisik)"
 right:
   panel: dark
   heading: "Konteks Syariah — PSAK 109"
@@ -155,13 +169,67 @@ right:
     - ["Ijarah", "Sewa (leasing)"]
     - ["Kafalah", "Penjaminan (guarantee)"]
 ===
+layout: table-grid
+kicker: Bagian 7
+title: "Produk & Layanan Tambahan (1/2)"
+rows:
+  - ["Deposito", "Bunga/bagi hasil, pencairan awal, perubahan nisbah"]
+  - ["Modul Kliring", "Pencatatan warkat/instruksi kliring nasabah"]
+  - ["Teller & Layanan Counter", "Alur transaksi front office via CASH_POINT"]
+  - ["QRIS & Virtual Account", "Pembayaran QR & VA, settlement/matching batch"]
+  - ["Host-to-Host & REST API", "Integrasi sistem eksternal berbasis JSON"]
+  - ["Corporate Banking", "Layanan & otorisasi bertingkat nasabah korporat"]
+===
+layout: table-grid
+kicker: Bagian 7
+title: "Produk & Layanan Tambahan (2/2)"
+rows:
+  - ["Rekening & Manajemen Nasabah", "Siklus hidup CIF, pembukaan-penutupan rekening"]
+  - ["Biller & Remittance", "Pembayaran tagihan pihak ketiga & transfer lintas bank/negara"]
+  - ["Integrasi SAP/GL Eksternal", "Posting akuntansi batch untuk konsolidasi korporat"]
+  - ["Dana Haji", "Produk simpanan/pembiayaan khusus dana haji"]
+===
+layout: two-column
+kicker: Bagian 8
+title: Batch Operasional & Kontinuitas Layanan
+left:
+  panel: dark
+  heading: "Batch Process & EOD/BOD"
+  intro: "Siklus operasional harian cabang:"
+  bullets:
+    - "End-of-Day (EOD): tutup hari, rekonsiliasi saldo"
+    - "Begin-of-Day (BOD): branch open, persiapan hari kerja baru"
+    - "Prasyarat konsistensi data antar hari & pelaporan regulator"
+right:
+  panel: light
+  heading: "Backup & Disaster Recovery"
+  intro: "Menjaga kontinuitas layanan (business continuity):"
+  bullets:
+    - "Backup database berjenjang (penuh & incremental)"
+    - "Prosedur disaster recovery"
+    - "Bagian dari kepatuhan ketahanan operasional perbankan"
+===
+layout: numbered-cards
+kicker: Bagian 9
+title: Keamanan, Otorisasi & Audit Lanjutan
+intro: "Lapisan kontrol tambahan di luar hak akses dasar & audit trail (Bagian 6)."
+cards:
+  - heading: Maker-Checker / Otorisasi
+    text: "Transaksi/perubahan data menunggu persetujuan (OtorEntri) sebelum efektif; riwayat otorisasi tersimpan sebagai jejak audit tersendiri"
+  - heading: User Security & Access Control
+    text: "Validasi keamanan data user, activity log, serta laporan hak akses per user/grup"
+  - heading: Session & Block Management
+    text: "Kedaluwarsa sesi login & pemblokiran otomatis setelah kondisi tertentu (mis. gagal login berulang)"
+  - heading: Verifikasi Biometrik
+    text: "Lapisan otentikasi tambahan di luar PIN/password untuk transaksi berisiko tinggi"
+===
 layout: summary
 kicker: Ringkasan
 title: Poin-Poin Kunci
 points:
-  - "IBANKCORE — multi-modul dengan lapisan data & pola integrasi yang konsisten"
-  - "Modul Accounting — pusat pencatatan double-entry yang menopang seluruh modul"
-  - "Funding & Cash Management — saling terkait erat di setiap transaksi dana/kas"
-  - "Integrasi sistem sekitar (Kafka, SKN/RTGS/BI-FAST, regulator) — bagian penting arsitektur end-to-end"
+  - "IBANKCORE — dua aplikasi (core & enterprise) dengan lapisan data & pola integrasi yang konsisten"
+  - "Accounting, Funding, Kas & Vault — pencatatan double-entry & Deposito sebagai contoh produk"
+  - "Integrasi sistem sekitar (Kafka, SKN/RTGS/BI-FAST, QRIS, host-to-host/REST) & produk tambahan (Corporate, Biller, Dana Haji)"
+  - "Batch EOD/BOD, disaster recovery, maker-checker, user security & biometrik — lapisan operasional dan kontrol keamanan kunci"
 discussion_heading: "Bahan Diskusi"
-discussion: "Modul mana yang paling relevan untuk didalami lebih lanjut?   •   Adakah isu integrasi/kepatuhan yang ingin dibahas?"
+discussion: "Modul mana yang paling relevan untuk didalami lebih lanjut?   •   Bagaimana penerapan maker-checker & EOD/BOD saat ini?"

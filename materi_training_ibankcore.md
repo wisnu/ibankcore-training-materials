@@ -11,19 +11,22 @@ header: IBANKCORE — Materi Training
 
 ## 1.1 Tujuan Training
 
-Sesi ini bertujuan memberikan pemahaman menyeluruh (overview) mengenai sistem core banking IBANKCORE, khususnya modul Accounting, Funding, dan Treasury (Cash Management), serta bagaimana ketiga modul tersebut berinteraksi satu sama lain maupun dengan aplikasi/sistem di sekitarnya (channel, sistem kliring, regulator, dan platform integrasi).
+Sesi ini bertujuan memberikan pemahaman menyeluruh (overview) mengenai sistem core banking IBANKCORE, khususnya modul Accounting, Funding, dan Treasury (Kas & Vault), serta bagaimana ketiga modul tersebut berinteraksi satu sama lain maupun dengan aplikasi/sistem di sekitarnya (channel, sistem kliring, regulator, dan platform integrasi).
 
 Materi disusun untuk audiens campuran — baik yang berlatar belakang teknis (developer, DBA) maupun bisnis (business analyst, product owner, auditor) — sehingga penjelasan konsep akan diberikan pada level arsitektur dan proses bisnis, sebelum masuk ke detail data model bila diperlukan.
 
 ## 1.2 Ruang Lingkup
 
-- Arsitektur modul IBANKCORE secara keseluruhan (Funding, Financing, Accounting, Cash Management, Remittance, Internal Account, Customer, Enterprise).
+- Arsitektur modul IBANKCORE secara keseluruhan (Funding, Financing, Accounting, Kas & Vault, Remittance, Internal Account, Customer, Enterprise).
 - Prinsip pencatatan transaksi (double-entry ledger) pada modul Accounting.
 - Konsep dasar modul Funding (produk pendanaan/simpanan).
-- Konsep Treasury / Cash Management, termasuk abstraksi CASH_POINT (teller, vault, ATM, sundry).
+- Konsep Treasury / Kas & Vault (Teller/ATM), termasuk abstraksi CASH_POINT (teller, vault, ATM, sundry).
 - Struktur organisasi cabang & departemen, serta manajemen user dan hak akses (role, limit otorisasi).
 - Interaksi dengan sistem sekitar: event streaming (Kafka), kliring & pembayaran (SKN, RTGS, BI-FAST), serta pelaporan regulator (OJK/BI).
 - Contoh proses bisnis end-to-end: Setor Tunai dan Pindah Buku.
+- Produk & layanan tambahan: Deposito, Kliring, Teller & Layanan Counter, QRIS & Virtual Account, Host-to-Host & REST API, Corporate Banking, Manajemen Rekening & Nasabah (CIF), Biller & Remittance, integrasi SAP/GL eksternal, dan produk Dana Haji.
+- Operasional batch & kontinuitas layanan: End-of-Day/Begin-of-Day (EOD/BOD) cabang, serta backup & disaster recovery.
+- Keamanan, otorisasi, dan audit lanjutan: mekanisme maker-checker (OtorEntri), user security & access control, session/block management, dan verifikasi biometrik.
 - Konteks regulasi & syariah (PSAK 109) yang relevan dengan sebagian produk pembiayaan.
 
 ## 1.3 Konteks Lingkungan
@@ -43,7 +46,7 @@ IBANKCORE adalah sistem core banking multi-modul. Setiap modul menangani domain 
 | Funding | Produk pendanaan/simpanan nasabah (tabungan, giro, deposito). |
 | Financing | Produk pembiayaan, termasuk skema syariah (Murabahah, Ijarah, Kafalah). |
 | Accounting | Pencatatan transaksi double-entry, buku besar (GL), saldo harian. |
-| Cash Management | Pengelolaan kas fisik: teller, vault, ATM, sundry (CASH_POINT). |
+| Kas & Vault (Teller/ATM) | Pengelolaan kas fisik: teller, vault, ATM, sundry (CASH_POINT). |
 | Remittance | Transfer dana antar bank: SKN, RTGS, BI-FAST. |
 | Internal Account | Rekening internal bank (GL internal, suspense, sundry account). |
 | Customer | Data induk nasabah (CIF), identitas, profil risiko. |
@@ -56,6 +59,14 @@ Seluruh modul berbagi lapisan data pada Oracle dan/atau PostgreSQL. Pemisahan sk
 ## 2.3 Kanal & Sistem Sekitar
 
 Transaksi dapat masuk melalui berbagai kanal (teller/cabang, ATM/EDC, mobile & internet banking, maupun API gateway). Di sisi hilir, IBANKCORE terhubung dengan sistem kliring/pembayaran (SKN/RTGS/BI-FAST), kebutuhan pelaporan regulator (OJK/BI), serta kebutuhan audit eksternal.
+
+## 2.4 Aplikasi Core vs Enterprise
+
+Secara implementasi, IBANKCORE terdiri dari dua aplikasi terpisah namun saling terkait: **core** dan **enterprise**.
+
+- **Aplikasi Core** — mesin transaksi & produk perbankan itu sendiri: logika akun, transaksi, jurnal, serta seluruh produk (Deposito, Tabungan, Kliring, Teller, Corporate) dan integrasi kanal (QRIS, host-to-host, REST API). Aplikasi ini dideploy per-instansi/bank, ditandai dengan konfigurasi lingkungan terpisah seperti training, UAT, dan production.
+- **Aplikasi Enterprise** — modul platform/administratif di atas core: manajemen user & cabang, keamanan & hak akses, mekanisme otorisasi (maker-checker), proses batch operasional (EOD/BOD), backup/disaster recovery, serta monitoring sesi user.
+- Kedua aplikasi berbagi prinsip dan pola arsitektur yang sama (lapisan data, struktur transaksi), namun **core** berfokus pada domain bisnis/produk sedangkan **enterprise** berfokus pada domain administrasi, keamanan, dan operasional platform.
 
 # 3. Modul Accounting
 
@@ -92,11 +103,21 @@ Modul Funding mengelola produk-produk pendanaan/simpanan nasabah — misalnya ta
 
 ## 4.2 Keterkaitan dengan Modul Lain
 
-Setiap transaksi pada rekening Funding (misalnya Setor Tunai) akan memicu pencatatan pada modul Accounting (DR/CR) dan, bila melibatkan kas fisik, berinteraksi dengan modul Cash Management melalui abstraksi CASH_POINT.
+Setiap transaksi pada rekening Funding (misalnya Setor Tunai) akan memicu pencatatan pada modul Accounting (DR/CR) dan, bila melibatkan kas fisik, berinteraksi dengan modul Kas & Vault melalui abstraksi CASH_POINT.
 
-# 5. Modul Treasury / Cash Management
+## 4.3 Produk Deposito
 
-Modul Cash Management mengelola pergerakan kas fisik dan likuiditas bank, termasuk kas teller, vault (khazanah), ATM, dan rekening sundry.
+Deposito adalah salah satu produk Funding dengan karakteristik jangka waktu dan perhitungan bagi hasil/bunga tersendiri, mencakup beberapa proses khusus.
+
+- **Perhitungan bunga/bagi hasil** — dihitung berdasarkan nominal, jangka waktu, dan nisbah/suku bunga yang berlaku pada saat pembukaan atau perpanjangan deposito.
+- **Pencairan awal (premature withdrawal)** — pencairan sebelum jatuh tempo, umumnya dikenakan penalti atau penyesuaian bagi hasil sesuai kebijakan bank.
+- **Perubahan nisbah** — penyesuaian porsi bagi hasil (untuk produk syariah) yang dapat berlaku pada perpanjangan otomatis (roll-over) deposito.
+
+# 5. Modul Treasury / Kas & Vault (Teller/ATM)
+
+Modul Kas & Vault mengelola pergerakan kas fisik dan likuiditas bank, termasuk kas teller, vault (khazanah), ATM, dan rekening sundry.
+
+> **Catatan istilah**: modul ini berbeda dengan istilah industri "Cash Management System (CMS)", yang umumnya merujuk pada portal/aplikasi web bagi nasabah korporat (CIF) untuk kebutuhan pembayaran massal, koleksi, dan monitoring likuiditas multi-rekening. Modul yang dibahas di sini secara spesifik menangani manajemen kas fisik internal cabang (laci teller, vault, ATM, sundry), bukan kanal digital nasabah korporat.
 
 ## 5.1 Abstraksi CASH_POINT
 
@@ -108,7 +129,15 @@ CASH_POINT adalah abstraksi yang menyeragamkan berbagai titik penyimpanan/perput
 - Rekonsiliasi kas fisik terhadap catatan sistem.
 - Interaksi dengan Remittance untuk kebutuhan settlement lintas bank (SKN, RTGS, BI-FAST).
 
-![Gambar 5.1 — Integrasi Cash Management, Treasury & Remittance dengan sistem sekitar](diagrams/03_integrasi_sistem_sekitar.png)
+![Gambar 5.1 — Integrasi Kas & Vault, Treasury & Remittance dengan sistem sekitar](diagrams/03_integrasi_sistem_sekitar.png)
+
+## 5.3 Modul Teller & Layanan Counter
+
+Modul Teller/Layanan Counter merepresentasikan alur transaksi front office di cabang — titik interaksi langsung antara nasabah dan sistem melalui CASH_POINT laci teller.
+
+- Mendukung ragam transaksi counter (setor, tarik, pemindahbukuan, layanan lain) dalam satu alur kerja teller yang konsisten.
+- Setiap transaksi teller tervalidasi terhadap saldo kas fisik pada CASH_POINT terkait sebelum dicatat ke modul Accounting.
+- Menjadi titik awal (entry point) paling umum bagi sebagian besar contoh proses bisnis (lihat Bagian 8).
 
 # 6. Manajemen Cabang, Departemen & User
 
@@ -157,6 +186,23 @@ IBANKCORE menggunakan pola transactional outbox untuk mempublikasikan event tran
 
 Sebagai entitas yang diawasi OJK dan BI, IBANKCORE perlu mendukung pelaporan berkala (mis. laporan keuangan, laporan transaksi, laporan kepatuhan) serta menyediakan jejak data yang dapat ditelusuri untuk kebutuhan audit eksternal.
 
+## 7.4 Modul Kliring
+
+Selain kliring sebagai sistem pembayaran antar bank (SKN, lihat 7.2), IBANKCORE memiliki modul transaksi kliring tersendiri yang menangani pencatatan dan pemrosesan warkat/instruksi kliring nasabah sebelum diteruskan ke sistem kliring nasional.
+
+## 7.5 QRIS & Virtual Account
+
+- **QRIS** — kanal pembayaran berbasis kode QR standar nasional; transaksi QRIS masuk melalui integrasi channel pihak ketiga dan diselesaikan (settlement) ke rekening tujuan melalui proses tersendiri.
+- **Virtual Account (VA)** — nomor rekening virtual yang dipetakan ke rekening nasabah/tujuan sebenarnya, umumnya dipakai untuk penagihan (billing) atau penerimaan pembayaran; pencocokan (matching) pembayaran VA dilakukan secara terjadwal (batch).
+
+## 7.6 Host-to-Host & REST API
+
+Selain kanal konvensional, IBANKCORE menyediakan integrasi host-to-host serta REST API bagi sistem eksternal (mis. aplikasi mitra, agregator pembayaran) untuk memicu transaksi maupun menarik data secara terprogram, mengikuti kontrak/format pesan yang telah disepakati (request/response berbasis JSON).
+
+## 7.7 Integrasi Akuntansi Eksternal (SAP)
+
+Untuk kebutuhan konsolidasi keuangan pada level korporasi/holding, IBANKCORE dapat mengirimkan posting akuntansi secara batch ke sistem akuntansi eksternal seperti SAP, sebagai pelengkap pencatatan GL internal pada modul Accounting.
+
 # 8. Contoh Proses Bisnis
 
 ## 8.1 Setor Tunai
@@ -167,19 +213,77 @@ Proses Setor Tunai melibatkan nasabah, teller, modul core (validasi & pencatatan
 
 ## 8.2 Pindah Buku
 
-Pindah Buku (transfer antar rekening dalam bank yang sama) mengikuti pola serupa dengan Setor Tunai, namun tanpa melibatkan kas fisik — mutasi DR terjadi pada rekening sumber dan mutasi CR pada rekening tujuan secara bersamaan (atomik), tanpa keterlibatan modul Cash Management.
+Pindah Buku (transfer antar rekening dalam bank yang sama) mengikuti pola serupa dengan Setor Tunai, namun tanpa melibatkan kas fisik — mutasi DR terjadi pada rekening sumber dan mutasi CR pada rekening tujuan secara bersamaan (atomik), tanpa keterlibatan modul Kas & Vault.
 
-# 9. Konteks Regulasi & Produk Syariah
+# 9. Produk & Layanan Tambahan
+
+Selain modul-modul inti (Bagian 3-8), IBANKCORE mendukung sejumlah produk dan layanan tambahan yang memperluas cakupan bisnis bank.
+
+## 9.1 Corporate Banking
+
+Layanan khusus untuk nasabah korporat — mencakup parameter dan fitur yang berbeda dari nasabah ritel, seperti otorisasi transaksi bertingkat sesuai struktur kewenangan perusahaan nasabah.
+
+## 9.2 Manajemen Rekening & Nasabah (CIF)
+
+Modul ini menangani siklus hidup data nasabah dan rekening — mulai dari pembukaan Customer Information File (CIF), pembukaan rekening, pemeliharaan data, hingga penutupan rekening — dan menjadi rujukan identitas/profil yang divalidasi oleh modul Funding maupun Financing saat transaksi terjadi.
+
+## 9.3 Biller & Remittance
+
+- **Biller** — integrasi pembayaran tagihan pihak ketiga (listrik, telekomunikasi, dan sejenisnya) melalui antarmuka biller tersendiri.
+- **Remittance** — pengiriman/penerimaan dana lintas bank maupun lintas negara, melengkapi kanal kliring/RTGS/BI-FAST yang telah dibahas pada Bagian 7.
+
+## 9.4 Dana Haji
+
+Produk pembiayaan/simpanan khusus untuk kebutuhan dana haji, dengan aturan dan skema pencatatan tersendiri yang tetap mengikuti prinsip double-entry pada modul Accounting.
+
+# 10. Operasional Batch & Kontinuitas Layanan
+
+## 10.1 Batch Process & EOD/BOD
+
+Operasional cabang mengikuti siklus harian yang dikelola melalui proses batch:
+
+- **End-of-Day (EOD)** — rangkaian proses tutup hari yang memastikan seluruh transaksi hari tersebut telah tercatat, saldo direkonsiliasi, dan cabang dapat ditutup secara sistem.
+- **Begin-of-Day (BOD)** — proses pembukaan hari kerja baru, termasuk persiapan cabang (branch open) sebelum transaksi hari itu dapat dimulai.
+- Proses ini memastikan konsistensi data antar hari operasional dan menjadi prasyarat sebelum laporan harian maupun pelaporan regulator dapat disusun.
+
+## 10.2 Backup & Disaster Recovery
+
+Untuk menjaga kontinuitas layanan, IBANKCORE mendukung mekanisme backup database secara berjenjang (mis. backup penuh maupun incremental) serta prosedur disaster recovery, sebagai bagian dari kepatuhan terhadap kebutuhan ketahanan operasional (business continuity) perbankan.
+
+# 11. Keamanan, Otorisasi & Audit Lanjutan
+
+Selain hak akses dasar dan audit trail yang telah dibahas pada Bagian 6, IBANKCORE menerapkan beberapa mekanisme keamanan dan kontrol tambahan yang penting untuk dipahami.
+
+## 11.1 Maker-Checker / Otorisasi
+
+Prinsip maker-checker (dual control) diimplementasikan melalui mekanisme otorisasi entri (OtorEntri) — transaksi atau perubahan data tertentu dicatat dalam status "menunggu otorisasi" dan baru berlaku efektif setelah disetujui oleh user lain dengan kewenangan yang sesuai. Riwayat otorisasi (termasuk siapa yang mengajukan dan siapa yang menyetujui/menolak) tersimpan sebagai jejak audit tersendiri, terpisah dari data transaksi utama.
+
+## 11.2 User Security & Access Control
+
+Selain Role-Based Access Control dasar (lihat 6.3), sistem menyediakan validasi keamanan data user, pencatatan aktivitas user (activity log), serta laporan hak akses (daftar menu/hak akses per user maupun per grup) yang mendukung kebutuhan audit periodik terhadap kesesuaian hak akses dengan peran pekerjaan.
+
+## 11.3 Session & Block Management
+
+Sistem memantau dan mengelola sesi login user, termasuk kedaluwarsa sesi (session expiry) dan pemblokiran otomatis user setelah kondisi tertentu (mis. percobaan login gagal berulang), sebagai kontrol keamanan tambahan terhadap akses tidak sah.
+
+## 11.4 Verifikasi Biometrik
+
+Untuk transaksi atau proses yang memerlukan tingkat keyakinan identitas lebih tinggi, IBANKCORE mendukung verifikasi biometrik nasabah sebagai lapisan otentikasi tambahan di luar PIN/password konvensional.
+
+# 12. Konteks Regulasi & Produk Syariah
 
 Sebagian produk pada modul Financing mengikuti prinsip syariah dan mengacu pada PSAK 109, mencakup skema seperti Murabahah (jual-beli dengan margin), Ijarah (sewa), dan Kafalah (penjaminan). Perlakuan akuntansi untuk skema-skema ini memiliki kekhususan dibandingkan produk konvensional, dan tetap harus konsisten dengan prinsip double-entry pada modul Accounting.
 
-# 10. Ringkasan
+# 13. Ringkasan
 
-- IBANKCORE adalah sistem core banking multi-modul yang berbagi lapisan data dan pola integrasi yang konsisten.
+- IBANKCORE adalah sistem core banking multi-modul yang berbagi lapisan data dan pola integrasi yang konsisten, terdiri dari dua aplikasi utama: core (mesin transaksi/produk) dan enterprise (platform, keamanan, operasional).
 - Modul Accounting menjadi pusat pencatatan double-entry yang menopang seluruh modul lain.
-- Modul Funding dan Cash Management/Treasury saling terkait erat dalam setiap transaksi yang melibatkan dana maupun kas fisik.
+- Modul Funding dan Kas & Vault/Treasury saling terkait erat dalam setiap transaksi yang melibatkan dana maupun kas fisik, termasuk produk khusus seperti Deposito.
 - Struktur cabang, departemen, dan user/hak akses menjadi lapisan pengendalian yang melekat pada hampir seluruh transaksi dan aktivitas sistem.
-- Interaksi dengan sistem sekitar (Kafka, SKN/RTGS/BI-FAST, regulator) menjadi bagian penting dari arsitektur end-to-end.
+- Interaksi dengan sistem sekitar (Kafka, SKN/RTGS/BI-FAST, QRIS, host-to-host/REST API, regulator) menjadi bagian penting dari arsitektur end-to-end.
+- Produk & layanan tambahan (Corporate Banking, Biller & Remittance, Dana Haji, dsb.) memperluas cakupan bisnis di luar produk simpanan/pembiayaan dasar.
+- Operasional batch (EOD/BOD) dan backup/disaster recovery menjaga konsistensi data dan kontinuitas layanan dari hari ke hari.
+- Mekanisme maker-checker (otorisasi), user security, session/block management, dan verifikasi biometrik menjadi lapisan kontrol keamanan yang penting dipahami baik oleh audiens teknis maupun bisnis/audit.
 - Diskusi lanjutan dapat difokuskan ke salah satu area untuk pendalaman lebih lanjut, misalnya detail data model, pola integrasi, atau studi kasus incident/rekonsiliasi.
 
 ## Bahan Diskusi
@@ -187,3 +291,5 @@ Sebagian produk pada modul Financing mengikuti prinsip syariah dan mengacu pada 
 - Modul mana yang paling relevan untuk didalami lebih lanjut oleh masing-masing peserta?
 - Apakah ada isu integrasi atau kepatuhan yang ingin dibahas lebih jauh?
 - Bagaimana pengelolaan hak akses/limit otorisasi saat ini dijalankan di masing-masing cabang/departemen?
+- Bagaimana mekanisme maker-checker (otorisasi) saat ini diterapkan untuk transaksi bernilai besar atau berisiko tinggi?
+- Seberapa sering proses EOD/BOD dan backup/disaster recovery diuji atau mengalami kendala di lapangan?
