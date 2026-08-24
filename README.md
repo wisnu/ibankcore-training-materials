@@ -22,8 +22,37 @@ ibankcore-training/
 ├── dist/                             # Hasil generate terakhir (boleh dihapus/di-gitignore)
 │   ├── materi_training_ibankcore.docx
 │   └── materi_training_ibankcore.pptx
+├── deployments/                      # Deliverable khusus per deployment/client (lihat di bawah)
+│   └── cgs-pos/
 └── package.json
 ```
+
+## Folder `deployments/` — Deliverable Khusus per Deployment
+
+File di root (`materi_training_ibankcore.md`, `slides_training_ibankcore.md`, `diagrams/`) adalah
+**basis knowledge menyeluruh** — mencakup semua modul konseptual IBANKCORE, termasuk yang mungkin
+tidak diimplementasikan pada suatu deployment tertentu (mis. Financing, Remittance).
+
+Untuk deliverable yang dikirim ke client/deployment tertentu, buat copy di `deployments/<nama>/`
+berisi `materi_training_ibankcore.md`, `slides_training_ibankcore.md`, dan `diagrams/` versi
+tersendiri yang sudah disunting agar **hanya menyebut modul yang benar-benar aktif** pada sistem
+tersebut — bukan menambah catatan "belum diaktifkan", tapi menghapus referensinya sama sekali.
+Ini untuk menghindari materi training dipakai sebagai dasar permintaan aktivasi/biaya fitur yang
+tidak termasuk dalam scope kontrak.
+
+Contoh yang sudah ada: **`deployments/cgs-pos/`** — deliverable untuk sistem CGS di PT Pos,
+tanpa modul Financing & Remittance (tidak diimplementasikan pada sistem ini), dengan diagram
+varian sendiri (`deployments/cgs-pos/make_diagrams.py`, hanya men-generate ulang diagram yang
+berubah; dua diagram yang tidak terpengaruh dicopy apa adanya dari `diagrams/` master).
+
+Build khusus deployment ini:
+
+```bash
+npm run build:cgs-pos   # generate docx + pptx ke deployments/cgs-pos/dist/
+```
+
+Catatan: deliverable ini hanya didistribusikan sebagai file `.docx`/`.pptx` — jangan berikan akses
+repo git ke pihak yang tidak semestinya melihat konten lengkap di root.
 
 ## Instalasi
 

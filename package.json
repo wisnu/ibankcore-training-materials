@@ -6,7 +6,10 @@
   "scripts": {
     "build:docx": "node scripts/md_to_docx.js materi_training_ibankcore.md dist/materi_training_ibankcore.docx",
     "build:pptx": "node scripts/md_to_pptx.js slides_training_ibankcore.md dist/materi_training_ibankcore.pptx",
-    "build": "npm run build:docx && npm run build:pptx"
+    "build": "npm run build:docx && npm run build:pptx",
+    "build:cgs-pos:docx": "node scripts/md_to_docx.js deployments/cgs-pos/materi_training_ibankcore.md deployments/cgs-pos/dist/materi_training_ibankcore.docx",
+    "build:cgs-pos:pptx": "node scripts/md_to_pptx.js deployments/cgs-pos/slides_training_ibankcore.md deployments/cgs-pos/dist/materi_training_ibankcore.pptx",
+    "build:cgs-pos": "npm run build:cgs-pos:docx && npm run build:cgs-pos:pptx"
   },
   "dependencies": {
     "docx": "^9.6.1",
