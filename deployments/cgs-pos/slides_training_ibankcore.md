@@ -24,7 +24,7 @@ cards:
     text: CASH_POINT & likuiditas
   - num: "05"
     heading: Integrasi Sistem Sekitar
-    text: Kafka & pelaporan regulator
+    text: Feeder SAP & pelaporan regulator
   - num: "06"
     heading: Contoh Proses Bisnis
     text: Setor Tunai & Pindah Buku
@@ -52,12 +52,57 @@ layout: table-grid
 kicker: Bagian 1
 title: Enam Modul Utama
 rows:
+  - ["Enterprise", "Struktur organisasi, user & hak akses, otorisasi, audit trail"]
   - ["Funding", "Produk pendanaan/simpanan (tabungan, giro, deposito)"]
   - ["Accounting", "Pencatatan double-entry & buku besar"]
   - ["Kas & Vault (Teller/ATM)", "Kas fisik: teller, vault, ATM, sundry"]
   - ["Internal Account", "Rekening internal bank (GL, suspense)"]
   - ["Customer", "Data induk nasabah (CIF)"]
-  - ["Enterprise", "Parameter, otorisasi, audit trail lintas modul"]
+===
+layout: image
+kicker: Bagian 1
+title: Struktur Organisasi — Wilayah, Cabang & Atribut Kantor
+image: diagrams/05_struktur_organisasi.png
+===
+layout: two-column
+kicker: Bagian 1
+title: Kaitan Struktur Cabang dengan COA & Neraca
+left:
+  panel: dark
+  heading: "Chart of Accounts (COA)"
+  intro: "Bagaimana akun COA menyatu dengan cabang:"
+  bullets:
+    - "Account (COA master) — daftar akun, tanpa dimensi cabang"
+    - "Account Instance — akun COA diinstansiasi per cabang & mata uang"
+    - "GL Account (saldo/posting) menempel ke Account Instance, bukan ke Account master"
+right:
+  panel: light
+  heading: "Neraca & Dimensi Cost Center"
+  intro: "Penyusunan laporan & dimensi biaya/pendapatan:"
+  bullets:
+    - "Neraca disusun per cabang maupun konsolidasi (parameter cabang opsional)"
+    - "Wilayah bukan dimensi langsung GL — agregasi per wilayah dilakukan via Cabang → Area Cabang"
+    - "Dimensi cost center pada jurnal = Kode RC (Project), bukan Departemen"
+===
+layout: two-column
+kicker: Bagian 1
+title: Isolasi Akses — Cabang & Departemen
+left:
+  panel: dark
+  heading: "Isolasi Cabang"
+  intro: "Gerbang akses aktif per user, 3 mode:"
+  bullets:
+    - "Semua — akses ke seluruh cabang"
+    - "Tunggal — hanya cabang milik user sendiri"
+    - "Parsial — hanya cabang yang terdaftar di daftar 'cabang diizinkan' + cabang sendiri"
+right:
+  panel: light
+  heading: "Isolasi Departemen"
+  intro: "Konsep serupa, konstruksi berbeda:"
+  bullets:
+    - "Daftar 'departemen diizinkan' terhubung ke data karyawan, bukan langsung ke user"
+    - "Lebih banyak dipakai untuk administrasi/pemilihan departemen (HR), bukan gerbang akses transaksi"
+    - "Mode akses meminjam pengaturan mode akses cabang milik user — tidak punya mode tersendiri"
 ===
 layout: two-column
 kicker: Bagian 2
@@ -68,19 +113,17 @@ left:
   intro: "Setiap transaksi selalu menghasilkan pasangan mutasi yang seimbang:"
   drcr: ["DR / Debit", "CR / Kredit"]
   items:
-    - label: "TRANSACTION_DETAILS"
-      text: "tabel inti mutasi, atribut MUTATION_TYPE (DR/CR)"
+    - label: "JOURNAL / JOURNALITEM"
+      text: "tabel inti ledger, baris mutasi DR/CR"
     - label: "dailybalancerekening"
       text: "saldo harian, direkonsiliasi terhadap mutasi"
-    - label: "CTI lintas skema"
-      text: "CORE_TRX, FUNDING, CASHMGT, REMIT"
 right:
   heading: Mengapa Penting
   bullets:
     - "Menjamin keseimbangan (balance) setiap transaksi secara atomik"
     - "Menjadi dasar rekonsiliasi saldo & deteksi anomali/duplikasi"
     - "Mendukung jejak audit (audit trail) untuk kebutuhan OJK/BI & auditor eksternal"
-    - "Menjadi sumber event bagi sistem hilir melalui outbox pattern"
+    - "Menjadi sumber data bagi Feeder SAP untuk konsolidasi keuangan"
 ===
 layout: image
 kicker: Bagian 2
@@ -123,14 +166,15 @@ image: diagrams/03_integrasi_sistem_sekitar.png
 ===
 layout: two-column
 kicker: Bagian 5
-title: Event Streaming & Pelaporan
+title: Feeder SAP & Pelaporan
 left:
   panel: dark
-  heading: "Event Streaming — Kafka"
-  intro: "Pola transactional outbox untuk publikasi event transaksi:"
+  heading: "Feeder SAP"
+  intro: "Integrasi akuntansi eksternal secara batch:"
   bullets:
-    - "Event terpublikasi konsisten ke konsumen hilir (reporting, notifikasi, GL)"
-    - "Loose coupling — konsumen tidak perlu akses langsung ke DB inti"
+    - "Feeder SAP mengambil (pull) data langsung dari DB Core secara berkala"
+    - "Bukan push/event-driven — Core tidak mengirim data secara aktif"
+    - "Melengkapi pencatatan GL internal pada modul Accounting"
 right:
   panel: light
   heading: "Pelaporan Regulator & Audit"
@@ -181,7 +225,7 @@ kicker: Bagian 7
 title: "Produk & Layanan Tambahan (2/2)"
 rows:
   - ["Biller", "Pembayaran tagihan pihak ketiga (listrik, telekomunikasi, dsb.)"]
-  - ["Integrasi SAP/GL Eksternal", "Posting akuntansi batch untuk konsolidasi korporat"]
+  - ["Feeder SAP / GL Eksternal", "Posting akuntansi batch untuk konsolidasi korporat"]
 ===
 layout: two-column
 kicker: Bagian 8
@@ -223,7 +267,7 @@ title: Poin-Poin Kunci
 points:
   - "IBANKCORE — dua aplikasi (core & enterprise) dengan lapisan data & pola integrasi yang konsisten"
   - "Accounting, Funding, Kas & Vault — pencatatan double-entry & Deposito sebagai contoh produk"
-  - "Integrasi sistem sekitar (Kafka, QRIS, host-to-host/REST) & produk tambahan (Corporate Banking, Biller)"
+  - "Integrasi sistem sekitar (Feeder SAP, QRIS, host-to-host/REST) & produk tambahan (Corporate Banking, Biller)"
   - "Batch EOD/BOD, disaster recovery, maker-checker, user security & biometrik — lapisan operasional dan kontrol keamanan kunci"
 discussion_heading: "Bahan Diskusi"
 discussion: "Modul mana yang paling relevan untuk didalami lebih lanjut?   •   Bagaimana penerapan maker-checker & EOD/BOD saat ini?"
