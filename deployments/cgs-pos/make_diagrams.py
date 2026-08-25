@@ -72,12 +72,12 @@ def new_fig(w=13, h=8):
 # =====================================================================
 # DIAGRAM 1 — Arsitektur Modul IBANKCORE (tanpa Financing & Remittance)
 # =====================================================================
-fig, ax = new_fig(13.5, 8.5)
+fig, ax = new_fig(16.7, 8.5)
 
-ax.text(6.75, 8.15, "Arsitektur Modul IBANKCORE", ha="center", fontsize=17, fontweight="bold", color=NAVY)
-ax.text(6.75, 7.72, "Core Banking Multi-Modul & Sistem di Sekitarnya", ha="center", fontsize=10.5, color=GREY)
+ax.text(8.35, 8.15, "Arsitektur Modul IBANKCORE", ha="center", fontsize=17, fontweight="bold", color=NAVY)
+ax.text(8.35, 7.72, "Core Banking Multi-Modul & Sistem di Sekitarnya", ha="center", fontsize=10.5, color=GREY)
 
-box(ax, 0.45, 6.55, 12.8, 1.15, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
+box(ax, 0.45, 6.6, 12.8, 1.1, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
 ax.text(0.75, 7.65, "Channel Layer", fontsize=9.5, fontweight="bold", color=BLUE, va="top")
 
 channels = ["BDS /\nAppClient", "ATM / EDC", "Mobile &\nInternet Banking", "E-Channel /\nAPI Gateway"]
@@ -86,23 +86,30 @@ cw = 3.0
 for i, c in enumerate(channels):
     box(ax, cx + i * (cw + 0.15), 6.65, cw, 0.75, c, fc=WHITE, ec=STEEL, tc=NAVY, fs=9.5)
 
-arrow(ax, (6.75, 6.5), (6.75, 6.1), color=STEEL)
+arrow(ax, (6.75, 6.55), (6.75, 5.9), color=STEEL, style="<|-|>")
 
 envelope_x, envelope_w = 0.5, 12.5
-box(ax, envelope_x, 2.35, envelope_w, 3.7, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
-ax.text(0.85, 6.02, "IBANKCORE  (Core Banking System)", fontsize=12, fontweight="bold", color=BLUE, va="top")
+box(ax, envelope_x, 2.35, envelope_w, 3.5, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
+ax.text(0.85, 5.82, "IBANKCORE  (Core Banking System)", fontsize=12, fontweight="bold", color=BLUE, va="top")
 
 modules = [
     "Enterprise", "Funding", "Accounting",
     "Kas & Vault\n(Teller/ATM)", "Internal\nAccount", "Customer"
 ]
+switching_label = "Switching-CGS\n(Akses DB)"
 mw, mh = 1.42, 1.15
 gap = 0.14
-row_w = len(modules) * mw + (len(modules) - 1) * gap
+row_w = (len(modules) + 1) * mw + len(modules) * gap
 start_x = envelope_x + (envelope_w - row_w) / 2
 y_mod = 4.15
 for i, m in enumerate(modules):
     box(ax, start_x + i * (mw + gap), y_mod, mw, mh, m, fc=BG_CARD, ec=BLUE_LIGHT, tc=NAVY, fs=9)
+
+# Switching-CGS digambar sebagai bagian dari IBANKCORE (aplikasi ketiga, lihat Bagian 2.5),
+# bukan sistem sekitar eksternal — tapi tetap ditandai beda (gold + garis putus-putus)
+# karena aksesnya langsung ke DB, bukan lewat lapisan aplikasi seperti modul lain.
+x_switch = start_x + len(modules) * (mw + gap)
+box(ax, x_switch, y_mod, mw, mh, switching_label, fc="#FCEFDA", ec=ACCENT, tc=NAVY, fs=8.5)
 
 db_cylinder(ax, 0.75, 2.65, 11.85, 0.85, "Shared Data Layer  —  Oracle", fc=NAVY, ec=NAVY, tc=WHITE, fs=10.5)
 
@@ -110,30 +117,75 @@ for i in range(len(modules)):
     xc = start_x + i * (mw + gap) + mw / 2
     arrow(ax, (xc, y_mod), (xc, 3.5), color=STEEL, lw=1.3)
 
-box(ax, 10.9, 1.1, 2.1, 0.85, "Feeder SAP\n(Pull dari DB)", fc="#FCEFDA", ec=ACCENT, tc=NAVY, fs=9.5)
-arrow(ax, (11.95, 1.95), (10.9, 2.9), color=ACCENT, connectionstyle="arc3,rad=0.2", ls="--")
+xc_switch = x_switch + mw / 2
+arrow(ax, (xc_switch, y_mod), (xc_switch, 3.5), color=ACCENT, lw=1.3, ls="--")
 
-surround_items = [
-    "Switching-CGS\n(Akses Langsung DB)",
-    "Regulator\nOJK / BI Reporting",
-    "Kantor Akuntan /\nExternal Audit",
+# 3rd Party Service — di sisi kanan IBANKCORE, satu garis koneksi saja ke IBANKCORE
+tp_x, tp_w = envelope_x + envelope_w + 0.7, 3.0
+tp_bottom, tp_height = 2.35, 3.7
+box(ax, tp_x, tp_bottom, tp_w, tp_height, "", fc="#EAF5EF", ec=GREEN, lw=1.6, radius=0.03)
+ax.text(tp_x + 0.3, tp_bottom + tp_height - 0.15, "3rd Party Service", fontsize=9.5, fontweight="bold", color=GREEN, va="top")
+
+tp_items = ["PGC", "QRIS Provider", "Bank"]
+tp_item_w, tp_item_h = 2.4, 0.95
+tp_item_gap = 0.15
+tp_item_x = tp_x + (tp_w - tp_item_w) / 2
+tp_item_top = tp_bottom + tp_height - 0.5
+for i, label in enumerate(tp_items):
+    y = tp_item_top - (i + 1) * tp_item_h - i * tp_item_gap
+    box(ax, tp_item_x, y, tp_item_w, tp_item_h, label, fc=WHITE, ec=GREEN, tc=NAVY, fs=9.5)
+
+arrow(ax, (tp_x, tp_bottom + tp_height / 2), (envelope_x + envelope_w, tp_bottom + tp_height / 2), color=GREEN, style="<|-|>")
+
+# External Systems Layer (selebar IBANKCORE): Feeder SAP (pull dari DB), Cut-off/Cleansing,
+# DWH, Reporting Service — kotak independen tanpa garis relasi antar-sesama.
+# Feeder SAP -> SAP (sistem tujuan feed) digambar terpisah di baris paling bawah.
+# Laporan ke Regulator berasal dari kotak External Systems Layer (bukan dari sub-servicenya),
+# sedangkan Dashboard tetap disuplai dari DWH.
+ext_x, ext_w = envelope_x, envelope_w
+ext_bottom, ext_height = 1.05, 1.1
+box(ax, ext_x, ext_bottom, ext_w, ext_height, "", fc="#FCEFDA", ec=ACCENT, lw=1.4, radius=0.03)
+ax.text(0.75, 2.08, "External Systems Layer", fontsize=9.5, fontweight="bold", color=ACCENT, va="top")
+
+ext_items = [
+    "Feeder SAP\n(Pull dari DB)",
+    "Cut-off &\nCleansing Service",
+    "DWH\n(Data Warehouse)",
+    "Reporting Service",
 ]
-surround_w = 2.5
-surround_gap = 0.15
-surround_row_w = len(surround_items) * surround_w + (len(surround_items) - 1) * surround_gap
-surround_start_x = envelope_x + (envelope_w - surround_row_w) / 2
-surround = [(label, surround_start_x + i * (surround_w + surround_gap)) for i, label in enumerate(surround_items)]
-for label, x in surround:
-    xc = x + 1.25
-    if "Switching" in label:
-        # Payment Switching punya akses langsung ke DB Core (setup infrastruktur/DB link,
-        # bukan lewat lapisan aplikasi/API seperti kanal lain) — gaya visual disamakan
-        # dengan Feeder SAP: warna accent + garis putus-putus.
-        box(ax, x, 0.35, 2.5, 0.9, label, fc="#FCEFDA", ec=ACCENT, tc=NAVY, fs=9.2)
-        arrow(ax, (xc, 1.25), (xc, 2.35), color=ACCENT, ls="--", connectionstyle="arc3,rad=0.0")
-    else:
-        box(ax, x, 0.35, 2.5, 0.9, label, fc=WHITE, ec=GREY, tc=NAVY, fs=9.2)
-        arrow(ax, (xc, 2.35), (xc, 1.25), color=GREY, connectionstyle="arc3,rad=0.0")
+eb_w, eb_h = 2.7, 0.55
+eb_gap = 0.3
+eb_row_w = len(ext_items) * eb_w + (len(ext_items) - 1) * eb_gap
+eb_start_x = ext_x + (ext_w - eb_row_w) / 2
+eb_y = 1.25
+eb_xs = []
+for i, label in enumerate(ext_items):
+    x = eb_start_x + i * (eb_w + eb_gap)
+    eb_xs.append(x)
+    box(ax, x, eb_y, eb_w, eb_h, label, fc=WHITE, ec=ACCENT, tc=NAVY, fs=9)
+
+arrow(ax, (6.75, ext_bottom + ext_height), (6.75, 2.65), color=ACCENT, ls="--")
+
+feeder_center_x = eb_xs[0] + eb_w / 2
+
+sap_w, sap_h = 2.6, 0.6
+sap_x, sap_y = feeder_center_x - sap_w / 2, 0.15
+box(ax, sap_x, sap_y, sap_w, sap_h, "SAP", fc=WHITE, ec=ACCENT, tc=NAVY, fs=9.5)
+arrow(ax, (feeder_center_x, eb_y), (feeder_center_x, sap_y + sap_h), color=ACCENT)
+
+report_items = [
+    "Regulator\nOJK / BI Reporting",
+    "Dashboard",
+]
+rb_w, rb_h = 4.3, 0.6
+rb_gap = 0.3
+rb_start_x = sap_x + sap_w + 0.4
+rb_y = 0.15
+for i, label in enumerate(report_items):
+    x = rb_start_x + i * (rb_w + rb_gap)
+    box(ax, x, rb_y, rb_w, rb_h, label, fc=WHITE, ec=GREY, tc=NAVY, fs=9.2)
+    xc = x + rb_w / 2
+    arrow(ax, (xc, ext_bottom), (xc, rb_y + rb_h), color=GREY)
 
 fig.savefig(os.path.join(OUT_DIR, "01_arsitektur_ibankcore.png"), dpi=200, bbox_inches="tight", facecolor="white")
 plt.close(fig)
