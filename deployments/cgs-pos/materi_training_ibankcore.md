@@ -38,7 +38,20 @@ IBANKCORE adalah sistem core banking multi-modul. Setiap modul menangani domain 
 
 ![Gambar 2.1 — Arsitektur Modul IBANKCORE](diagrams/01_arsitektur_ibankcore.png)
 
-## 2.1 Modul-Modul Utama
+Gambar 2.1 tersusun dari empat kelompok besar (kotak) yang dibahas berurutan pada 2.1-2.4: **Channel Layer**, **Core Banking System**, **Internal Support Layer**, dan **3rd Party Service**.
+
+## 2.1 Channel Layer
+
+Kelompok paling atas — seluruh titik masuk transaksi ke IBANKCORE:
+
+- **BDS/AppClient**, **Mobile & Internet Banking**, **E-Channel/API Gateway**, **CMS (Cash Management System)**, **ATM/EDC** — lima kanal yang membawa transaksi masuk ke Core Banking System (2.2) dan sekaligus bisa menerima respons balik (koneksi dua arah).
+- **CMS** di sini adalah kanal digital untuk institusi/korporat (lihat 2.4 & Bagian 7.6) — berbeda dari modul internal "Kas & Vault" (2.2).
+
+## 2.2 Core Banking System
+
+Kelompok tengah (envelope terbesar) — mesin transaksi & produk perbankan itu sendiri, mencakup modul bisnis, lapisan data, dan aplikasi penyusunnya.
+
+### 2.2.1 Modul-Modul Utama
 
 | Modul | Fungsi Utama |
 |---|---|
@@ -49,15 +62,11 @@ IBANKCORE adalah sistem core banking multi-modul. Setiap modul menangani domain 
 | Internal Account | Rekening internal bank (GL internal, suspense, sundry account). |
 | Customer | Data induk nasabah (CIF), identitas, profil risiko. |
 
-## 2.2 Lapisan Data
+### 2.2.2 Lapisan Data
 
 Seluruh modul berbagi satu basis data Oracle yang sama — bukan database terpisah per modul — sehingga transaksi lintas modul (mis. Setor Tunai yang melibatkan Funding, Accounting, dan Kas & Vault sekaligus) dapat tercatat secara konsisten dalam satu lapisan data.
 
-## 2.3 Kanal & Sistem Sekitar
-
-Transaksi dapat masuk melalui berbagai kanal (teller/cabang, ATM/EDC, mobile & internet banking, maupun API gateway). Di sisi hilir, IBANKCORE terhubung dengan kebutuhan pelaporan regulator (OJK/BI) serta kebutuhan audit eksternal.
-
-## 2.4 Aplikasi Core vs Enterprise
+### 2.2.3 Aplikasi Core vs Enterprise
 
 Secara implementasi, IBANKCORE terdiri dari dua aplikasi terpisah namun saling terkait: **core** dan **enterprise**.
 
@@ -65,27 +74,17 @@ Secara implementasi, IBANKCORE terdiri dari dua aplikasi terpisah namun saling t
 - **Aplikasi Core** — mesin transaksi & produk perbankan itu sendiri: logika akun, transaksi, jurnal, serta produk (Deposito, Tabungan, Teller, Corporate) dan integrasi kanal (QRIS, host-to-host, REST API). Aplikasi ini dideploy per-instansi/bank, ditandai dengan konfigurasi lingkungan terpisah seperti training, UAT, dan production.
 - Kedua aplikasi berbagi prinsip dan pola arsitektur yang sama (lapisan data, struktur transaksi), namun **enterprise** berfokus pada domain administrasi, keamanan, dan operasional platform, sedangkan **core** berfokus pada domain bisnis/produk.
 
-## 2.5 Aplikasi Ketiga: Switching (switching-cgs)
+### 2.2.4 Aplikasi Ketiga: Switching (switching-cgs)
 
-Selain core dan enterprise (Bagian 2.4), pada deployment PT Pos terdapat **aplikasi ketiga yang berdiri sendiri**: proyek switching (nama internal "switching-cgs") — hasil modernisasi komponen switching pembayaran dari Python legacy ke **Go**. Karena secara fungsional switching-cgs adalah bagian dari ekosistem IBANKCORE (bukan sistem pihak ketiga eksternal), pada Gambar 2.1 aplikasi ini digambar **di dalam** envelope IBANKCORE, sejajar modul lain — meski gaya visualnya tetap dibedakan (gold, garis putus-putus) untuk menandakan akses langsungnya ke database.
+Selain core dan enterprise (2.2.3), pada deployment PT Pos terdapat **aplikasi ketiga yang berdiri sendiri**: proyek switching (nama internal "switching-cgs") — hasil modernisasi komponen switching pembayaran dari Python legacy ke **Go**. Karena secara fungsional switching-cgs adalah bagian dari ekosistem IBANKCORE (bukan sistem pihak ketiga eksternal), pada Gambar 2.1 aplikasi ini digambar **di dalam** envelope Core Banking System, sejajar modul lain — meski gaya visualnya tetap dibedakan (gold, garis putus-putus) untuk menandakan akses langsungnya ke database.
 
 - **Arsitektur microservice** — terdiri dari beberapa service terpisah (mis. core, core-hin, core-inq, core-rev, bca, jalin/QRIS, topup), masing-masing mendukung dua protokol: **BL2 (TCP)** untuk kompatibilitas ATM/EDC legacy, dan **gRPC** untuk klien modern. **Redis** dipakai sebagai job-queue/state-tracking untuk idempotency & recovery, dideploy via Docker/Kubernetes.
 - **Akses langsung ke database Core** — berbeda dari core/enterprise yang mengakses data melalui lapisan aplikasinya sendiri, switching-cgs terhubung **langsung ke Oracle** dengan skema (`ibcoreprod`/`ibentprod`) yang sama persis dengan skema core/enterprise, lengkap dengan modul query per-tabel (akun, transaksi, CIF, dsb.) — bukan lewat API. Pola ini konsisten dipakai baik untuk switching pembayaran umum (Bagian 7.5) maupun QRIS (menggantikan/melengkapi implementasi QRIS sisi core, Bagian 7.2), serta integrasi verifikasi identitas & OTP (Bagian 7.7).
 - **Implikasi arsitektur** — dengan tiga aplikasi (core, enterprise, switching-cgs) yang saling terhubung ke satu database Oracle yang sama, perubahan skema database berdampak lintas aplikasi dan perlu dikoordinasikan, tidak cukup diuji di satu aplikasi saja.
 
-## 2.6 3rd Party Service
+## 2.3 Internal Support Layer
 
-Di sisi kanan Gambar 2.1, IBANKCORE terhubung ke sejumlah penyedia layanan pihak ketiga melalui satu jalur koneksi dua arah (bidirectional) — merepresentasikan bahwa integrasi ke masing-masing pihak ketiga pada akhirnya bermuara pada satu boundary yang sama di sisi IBANKCORE, meski secara teknis tiap pihak ketiga punya kontrak/protokol integrasinya sendiri.
-
-- **PGC (Bansos)** — instansi pemerintah/himbara penyalur PGC (lihat Bagian 7.6 untuk detail alur penyaluran & peran CMS).
-- **Jalin (QRIS)** — penyedia switching QRIS; pemrosesannya ditangani oleh service `jalin` pada aplikasi switching-cgs (Bagian 2.5 & 7.2), termasuk proses rekonsiliasi manual berbasis file dari Jalin (Bagian 7.2).
-- **Bank** — bank lain/mitra untuk kebutuhan transfer maupun switching antar bank.
-
-> **Catatan**: pengelompokan "3rd Party Service" ini menggambarkan pihak eksternal yang sudah dibahas detailnya di bagian lain — bagian ini hanya menyatukan gambaran besarnya dalam satu diagram arsitektur.
-
-## 2.7 Internal Support Layer
-
-Di bagian bawah Gambar 2.1, terdapat kumpulan layanan pendukung internal yang beroperasi di sekitar (bukan di dalam) database Core, masing-masing independen satu sama lain:
+Kelompok ketiga (di bawah envelope Core Banking System) — kumpulan layanan pendukung internal yang beroperasi di sekitar (bukan di dalam) database Core, masing-masing independen satu sama lain:
 
 - **Feeder SAP** — mengambil (pull) data akuntansi dari database Core untuk dikirim ke sistem SAP eksternal (detail mekanisme pull-nya di Bagian 4.3 & 7.4).
 - **Cut-off & Cleansing Service** — layanan yang menyiapkan/membersihkan data pada titik cut-off (mis. akhir hari), sejalan dengan proses Batch EOD/BOD yang telah dibahas (Bagian 10.1), sebelum data dikonsumsi oleh layanan hilir seperti DWH atau Reporting Service.
@@ -94,7 +93,17 @@ Di bagian bawah Gambar 2.1, terdapat kumpulan layanan pendukung internal yang be
 
 Keempat layanan ini bermuara ke tiga tujuan akhir: **SAP** (dari Feeder SAP), **Regulator OJK/BI Reporting** (dari Internal Support Layer secara umum, terutama Reporting Service), dan **Dashboard** (dipasok dari DWH).
 
-> **Catatan**: penamaan "Internal Support Layer" dipilih untuk membedakannya dari "3rd Party Service" (Bagian 2.6) — layanan-layanan ini adalah komponen pendukung milik/dikelola sendiri (internal), bukan sistem pihak ketiga eksternal, meski posisinya di luar envelope IBANKCORE pada diagram.
+> **Catatan**: penamaan "Internal Support Layer" dipilih untuk membedakannya dari "3rd Party Service" (2.4) — layanan-layanan ini adalah komponen pendukung milik/dikelola sendiri (internal), bukan sistem pihak ketiga eksternal, meski posisinya di luar envelope Core Banking System pada diagram.
+
+## 2.4 3rd Party Service
+
+Kelompok keempat (di sisi kanan Gambar 2.1) — penyedia layanan pihak ketiga yang terhubung ke IBANKCORE melalui satu jalur koneksi dua arah (bidirectional), merepresentasikan bahwa integrasi ke masing-masing pihak ketiga pada akhirnya bermuara pada satu boundary yang sama di sisi IBANKCORE, meski secara teknis tiap pihak ketiga punya kontrak/protokol integrasinya sendiri.
+
+- **PGC (Bansos)** — instansi pemerintah/himbara penyalur PGC (lihat Bagian 7.6 untuk detail alur penyaluran & peran CMS).
+- **Jalin (QRIS)** — penyedia switching QRIS; pemrosesannya ditangani oleh service `jalin` pada aplikasi switching-cgs (2.2.4 & Bagian 7.2), termasuk proses rekonsiliasi manual berbasis file dari Jalin (Bagian 7.2).
+- **Bank** — bank lain/mitra untuk kebutuhan transfer maupun switching antar bank.
+
+> **Catatan**: pengelompokan "3rd Party Service" ini menggambarkan pihak eksternal yang sudah dibahas detailnya di bagian lain — bagian ini hanya menyatukan gambaran besarnya dalam satu diagram arsitektur.
 
 # 3. Manajemen Cabang, Departemen & User
 
@@ -224,7 +233,7 @@ Sebagai entitas yang diawasi OJK dan BI, IBANKCORE perlu mendukung pelaporan ber
 
 ## 7.2 QRIS & Virtual Account
 
-- **QRIS** — kanal pembayaran berbasis kode QR standar nasional; transaksi QRIS masuk melalui integrasi channel pihak ketiga dan diselesaikan (settlement) ke rekening tujuan melalui proses tersendiri. Pemrosesan QRIS ditangani oleh service `jalin` pada aplikasi switching-cgs (Bagian 2.5), dengan pola akses langsung ke database Core yang sama seperti switching pembayaran lainnya.
+- **QRIS** — kanal pembayaran berbasis kode QR standar nasional; transaksi QRIS masuk melalui integrasi channel pihak ketiga dan diselesaikan (settlement) ke rekening tujuan melalui proses tersendiri. Pemrosesan QRIS ditangani oleh service `jalin` pada aplikasi switching-cgs (Bagian 2.2.4), dengan pola akses langsung ke database Core yang sama seperti switching pembayaran lainnya.
 - **Virtual Account (VA)** — nomor rekening virtual yang dipetakan ke rekening nasabah/tujuan sebenarnya, umumnya dipakai untuk penagihan (billing) atau penerimaan pembayaran; pencocokan (matching) pembayaran VA dilakukan secara terjadwal (batch).
 - **Rekonsiliasi QRIS** — proses pencocokan data transaksi QRIS sisi Core terhadap data dari Jalin, dijalankan di sisi aplikasi `core` (bukan switching-cgs). Mekanismenya: user meng-upload file teks dari Jalin (format pipe-delimited berisi RRN, tanggal, amount, response code) melalui dialog rekonsiliasi; setiap baris dicocokkan ke tabel transaksi QRIS berdasarkan kombinasi RRN + tanggal transaksi + amount + tipe + settle ID — jika cocok, status transaksi ditandai "sudah direkonsiliasi & cocok di kedua sisi"; jika tidak ditemukan pasangannya di sisi Core, dicatat sebagai "hanya ada di sisi Jalin" (indikasi selisih). Hasil akhirnya berupa laporan Excel rekap per hari (total transaksi, total cocok, total nominal berhasil). Proses ini bersifat **manual/on-demand** (dipicu upload user), bukan job terjadwal otomatis.
 
@@ -238,7 +247,7 @@ Untuk kebutuhan konsolidasi keuangan pada level korporasi/holding, posting akunt
 
 ## 7.5 Payment Switching
 
-Payment Switching (switching pembayaran antar kanal/ATM-EDC) ditangani oleh aplikasi switching-cgs (Bagian 2.5) dan memiliki **akses langsung ke basis data Core** — bukan melalui lapisan aplikasi/API seperti kanal-kanal lain (host-to-host, REST API di atas). Ini merupakan konfigurasi pada level infrastruktur/database (mis. database link), bukan bagian dari kode aplikasi Core itu sendiri.
+Payment Switching (switching pembayaran antar kanal/ATM-EDC) ditangani oleh aplikasi switching-cgs (Bagian 2.2.4) dan memiliki **akses langsung ke basis data Core** — bukan melalui lapisan aplikasi/API seperti kanal-kanal lain (host-to-host, REST API di atas). Ini merupakan konfigurasi pada level infrastruktur/database (mis. database link), bukan bagian dari kode aplikasi Core itu sendiri.
 
 > **Catatan**: pola integrasi ini serupa dengan Feeder SAP (akses langsung ke database, bukan lewat API), namun perlu diperlakukan dengan perhatian ekstra dari sisi keamanan & tata kelola data karena melewati lapisan validasi aplikasi Core — perubahan skema database di masa depan berpotensi berdampak langsung ke switching tanpa melalui kontrak API yang terversi.
 

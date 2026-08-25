@@ -48,9 +48,36 @@ kicker: Bagian 1
 title: Arsitektur Modul IBANKCORE
 image: diagrams/01_arsitektur_ibankcore.png
 ===
+layout: cards
+kicker: Bagian 1
+title: "Empat Kelompok Arsitektur"
+cards:
+  - num: "01"
+    heading: Channel Layer
+    text: Titik masuk transaksi (BDS, Mobile, API, CMS, ATM/EDC)
+  - num: "02"
+    heading: Core Banking System
+    text: Modul bisnis + aplikasi core/enterprise/switching-cgs
+  - num: "03"
+    heading: Internal Support Layer
+    text: Feeder SAP, Cut-off & Cleansing, DWH, Reporting
+  - num: "04"
+    heading: 3rd Party Service
+    text: PGC, Jalin (QRIS), Bank
+===
 layout: table-grid
 kicker: Bagian 1
-title: Enam Modul Utama
+title: "Channel Layer"
+rows:
+  - ["BDS / AppClient", "Kanal aplikasi internal/agen"]
+  - ["Mobile & Internet Banking", "Kanal digital nasabah retail"]
+  - ["E-Channel / API Gateway", "Integrasi sistem eksternal terprogram"]
+  - ["CMS (Cash Management System)", "Kanal digital institusi/korporat"]
+  - ["ATM / EDC", "Kanal fisik kartu"]
+===
+layout: table-grid
+kicker: Bagian 1
+title: "Core Banking System — Enam Modul Utama"
 rows:
   - ["Enterprise", "Struktur organisasi, user & hak akses, otorisasi, audit trail"]
   - ["Funding", "Produk pendanaan/simpanan (tabungan, giro, deposito)"]
