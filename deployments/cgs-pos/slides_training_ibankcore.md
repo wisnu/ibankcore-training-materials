@@ -78,6 +78,27 @@ right:
     - "Redis untuk job-queue/idempotency, deploy Docker/Kubernetes"
     - "Akses langsung ke Oracle — skema sama persis dengan core/enterprise"
 ===
+layout: two-column
+kicker: Bagian 1
+title: "3rd Party Service & Internal Support Layer"
+left:
+  panel: dark
+  heading: "3rd Party Service"
+  intro: "Terhubung ke IBANKCORE via satu jalur dua arah:"
+  bullets:
+    - "PGC (Bansos) — instansi pemerintah/himbara penyalur"
+    - "Jalin (QRIS) — termasuk rekonsiliasi manual berbasis file"
+    - "Bank — mitra transfer/switching antar bank"
+right:
+  panel: light
+  heading: "Internal Support Layer"
+  intro: "Layanan pendukung internal, di luar envelope IBANKCORE:"
+  bullets:
+    - "Feeder SAP — pull data akuntansi ke SAP"
+    - "Cut-off & Cleansing Service — selaras dengan EOD/BOD"
+    - "DWH — sumber data untuk Dashboard"
+    - "Reporting Service — pelaporan ke Regulator OJK/BI"
+===
 layout: image
 kicker: Bagian 1
 title: Struktur Organisasi — Wilayah, Cabang & Atribut Kantor

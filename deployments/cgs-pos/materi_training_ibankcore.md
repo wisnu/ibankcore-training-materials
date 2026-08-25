@@ -73,6 +73,29 @@ Selain core dan enterprise (Bagian 2.4), pada deployment PT Pos terdapat **aplik
 - **Akses langsung ke database Core** — berbeda dari core/enterprise yang mengakses data melalui lapisan aplikasinya sendiri, switching-cgs terhubung **langsung ke Oracle** dengan skema (`ibcoreprod`/`ibentprod`) yang sama persis dengan skema core/enterprise, lengkap dengan modul query per-tabel (akun, transaksi, CIF, dsb.) — bukan lewat API. Pola ini konsisten dipakai baik untuk switching pembayaran umum (Bagian 7.5) maupun QRIS (menggantikan/melengkapi implementasi QRIS sisi core, Bagian 7.2), serta integrasi verifikasi identitas & OTP (Bagian 7.7).
 - **Implikasi arsitektur** — dengan tiga aplikasi (core, enterprise, switching-cgs) yang saling terhubung ke satu database Oracle yang sama, perubahan skema database berdampak lintas aplikasi dan perlu dikoordinasikan, tidak cukup diuji di satu aplikasi saja.
 
+## 2.6 3rd Party Service
+
+Di sisi kanan Gambar 2.1, IBANKCORE terhubung ke sejumlah penyedia layanan pihak ketiga melalui satu jalur koneksi dua arah (bidirectional) — merepresentasikan bahwa integrasi ke masing-masing pihak ketiga pada akhirnya bermuara pada satu boundary yang sama di sisi IBANKCORE, meski secara teknis tiap pihak ketiga punya kontrak/protokol integrasinya sendiri.
+
+- **PGC (Bansos)** — instansi pemerintah/himbara penyalur PGC (lihat Bagian 7.6 untuk detail alur penyaluran & peran CMS).
+- **Jalin (QRIS)** — penyedia switching QRIS; pemrosesannya ditangani oleh service `jalin` pada aplikasi switching-cgs (Bagian 2.5 & 7.2), termasuk proses rekonsiliasi manual berbasis file dari Jalin (Bagian 7.2).
+- **Bank** — bank lain/mitra untuk kebutuhan transfer maupun switching antar bank.
+
+> **Catatan**: pengelompokan "3rd Party Service" ini menggambarkan pihak eksternal yang sudah dibahas detailnya di bagian lain — bagian ini hanya menyatukan gambaran besarnya dalam satu diagram arsitektur.
+
+## 2.7 Internal Support Layer
+
+Di bagian bawah Gambar 2.1, terdapat kumpulan layanan pendukung internal yang beroperasi di sekitar (bukan di dalam) database Core, masing-masing independen satu sama lain:
+
+- **Feeder SAP** — mengambil (pull) data akuntansi dari database Core untuk dikirim ke sistem SAP eksternal (detail mekanisme pull-nya di Bagian 4.3 & 7.4).
+- **Cut-off & Cleansing Service** — layanan yang menyiapkan/membersihkan data pada titik cut-off (mis. akhir hari), sejalan dengan proses Batch EOD/BOD yang telah dibahas (Bagian 10.1), sebelum data dikonsumsi oleh layanan hilir seperti DWH atau Reporting Service.
+- **DWH (Data Warehouse)** — gudang data yang menampung hasil olahan/agregasi data Core untuk kebutuhan analitik, menjadi sumber data bagi Dashboard.
+- **Reporting Service** — layanan yang menyusun laporan, termasuk pelaporan berkala ke regulator OJK/BI (Bagian 7.1).
+
+Keempat layanan ini bermuara ke tiga tujuan akhir: **SAP** (dari Feeder SAP), **Regulator OJK/BI Reporting** (dari Internal Support Layer secara umum, terutama Reporting Service), dan **Dashboard** (dipasok dari DWH).
+
+> **Catatan**: penamaan "Internal Support Layer" dipilih untuk membedakannya dari "3rd Party Service" (Bagian 2.6) — layanan-layanan ini adalah komponen pendukung milik/dikelola sendiri (internal), bukan sistem pihak ketiga eksternal, meski posisinya di luar envelope IBANKCORE pada diagram.
+
 # 3. Manajemen Cabang, Departemen & User
 
 Selain modul-modul fungsional (Funding, Accounting, Treasury, dsb.), IBANKCORE juga memiliki lapisan struktur organisasi — cabang, departemen, dan user — yang menjadi atribut wajib pada hampir setiap transaksi maupun aktivitas sistem. Lapisan ini dikelola terutama melalui modul Enterprise dan Customer.
@@ -203,6 +226,7 @@ Sebagai entitas yang diawasi OJK dan BI, IBANKCORE perlu mendukung pelaporan ber
 
 - **QRIS** — kanal pembayaran berbasis kode QR standar nasional; transaksi QRIS masuk melalui integrasi channel pihak ketiga dan diselesaikan (settlement) ke rekening tujuan melalui proses tersendiri. Pemrosesan QRIS ditangani oleh service `jalin` pada aplikasi switching-cgs (Bagian 2.5), dengan pola akses langsung ke database Core yang sama seperti switching pembayaran lainnya.
 - **Virtual Account (VA)** — nomor rekening virtual yang dipetakan ke rekening nasabah/tujuan sebenarnya, umumnya dipakai untuk penagihan (billing) atau penerimaan pembayaran; pencocokan (matching) pembayaran VA dilakukan secara terjadwal (batch).
+- **Rekonsiliasi QRIS** — proses pencocokan data transaksi QRIS sisi Core terhadap data dari Jalin, dijalankan di sisi aplikasi `core` (bukan switching-cgs). Mekanismenya: user meng-upload file teks dari Jalin (format pipe-delimited berisi RRN, tanggal, amount, response code) melalui dialog rekonsiliasi; setiap baris dicocokkan ke tabel transaksi QRIS berdasarkan kombinasi RRN + tanggal transaksi + amount + tipe + settle ID — jika cocok, status transaksi ditandai "sudah direkonsiliasi & cocok di kedua sisi"; jika tidak ditemukan pasangannya di sisi Core, dicatat sebagai "hanya ada di sisi Jalin" (indikasi selisih). Hasil akhirnya berupa laporan Excel rekap per hari (total transaksi, total cocok, total nominal berhasil). Proses ini bersifat **manual/on-demand** (dipicu upload user), bukan job terjadwal otomatis.
 
 ## 7.3 Host-to-Host & REST API
 
