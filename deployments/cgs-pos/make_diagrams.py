@@ -77,20 +77,20 @@ fig, ax = new_fig(13.5, 8.5)
 ax.text(6.75, 8.15, "Arsitektur Modul IBANKCORE", ha="center", fontsize=17, fontweight="bold", color=NAVY)
 ax.text(6.75, 7.72, "Core Banking Multi-Modul & Sistem di Sekitarnya", ha="center", fontsize=10.5, color=GREY)
 
-box(ax, 0.45, 6.65, 12.8, 1.05, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
+box(ax, 0.45, 6.55, 12.8, 1.15, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
 ax.text(0.75, 7.65, "Channel Layer", fontsize=9.5, fontweight="bold", color=BLUE, va="top")
 
-channels = ["Teller /\nBranch", "ATM / EDC", "Mobile &\nInternet Banking", "E-Channel /\nAPI Gateway"]
+channels = ["BDS /\nAppClient", "ATM / EDC", "Mobile &\nInternet Banking", "E-Channel /\nAPI Gateway"]
 cx = 0.6
 cw = 3.0
 for i, c in enumerate(channels):
-    box(ax, cx + i * (cw + 0.15), 6.75, cw, 0.75, c, fc=WHITE, ec=STEEL, tc=NAVY, fs=9.5)
+    box(ax, cx + i * (cw + 0.15), 6.65, cw, 0.75, c, fc=WHITE, ec=STEEL, tc=NAVY, fs=9.5)
 
-arrow(ax, (6.75, 6.65), (6.75, 6.35), color=STEEL)
+arrow(ax, (6.75, 6.5), (6.75, 6.1), color=STEEL)
 
 envelope_x, envelope_w = 0.5, 12.5
-box(ax, envelope_x, 2.35, envelope_w, 4.0, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
-ax.text(0.85, 6.05, "IBANKCORE  (Core Banking System)", fontsize=12, fontweight="bold", color=BLUE)
+box(ax, envelope_x, 2.35, envelope_w, 3.7, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
+ax.text(0.85, 6.02, "IBANKCORE  (Core Banking System)", fontsize=12, fontweight="bold", color=BLUE, va="top")
 
 modules = [
     "Enterprise", "Funding", "Accounting",
