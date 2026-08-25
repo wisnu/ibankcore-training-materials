@@ -80,11 +80,11 @@ ax.text(8.35, 7.72, "Core Banking Multi-Modul & Sistem di Sekitarnya", ha="cente
 box(ax, 0.45, 6.6, 12.8, 1.1, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
 ax.text(0.75, 7.65, "Channel Layer", fontsize=9.5, fontweight="bold", color=BLUE, va="top")
 
-channels = ["BDS /\nAppClient", "ATM / EDC", "Mobile &\nInternet Banking", "E-Channel /\nAPI Gateway"]
+channels = ["BDS /\nAppClient", "Mobile &\nInternet Banking", "E-Channel /\nAPI Gateway", "CMS\n(Cash Management System)", "ATM / EDC"]
 cx = 0.6
-cw = 3.0
+cw = 2.38
 for i, c in enumerate(channels):
-    box(ax, cx + i * (cw + 0.15), 6.65, cw, 0.75, c, fc=WHITE, ec=STEEL, tc=NAVY, fs=9.5)
+    box(ax, cx + i * (cw + 0.15), 6.65, cw, 0.75, c, fc=WHITE, ec=STEEL, tc=NAVY, fs=8.5)
 
 arrow(ax, (6.75, 6.55), (6.75, 5.9), color=STEEL, style="<|-|>")
 
@@ -96,7 +96,7 @@ modules = [
     "Enterprise", "Funding", "Accounting",
     "Kas & Vault\n(Teller/ATM)", "Internal\nAccount", "Customer"
 ]
-switching_label = "Switching-CGS\n(Akses DB)"
+switching_label = "Switching-CGS"
 mw, mh = 1.42, 1.15
 gap = 0.14
 row_w = (len(modules) + 1) * mw + len(modules) * gap
@@ -126,7 +126,7 @@ tp_bottom, tp_height = 2.35, 3.7
 box(ax, tp_x, tp_bottom, tp_w, tp_height, "", fc="#EAF5EF", ec=GREEN, lw=1.6, radius=0.03)
 ax.text(tp_x + 0.3, tp_bottom + tp_height - 0.15, "3rd Party Service", fontsize=9.5, fontweight="bold", color=GREEN, va="top")
 
-tp_items = ["PGC", "QRIS Provider", "Bank"]
+tp_items = ["PGC (Bansos)", "Jalin (QRIS)", "Bank"]
 tp_item_w, tp_item_h = 2.4, 0.95
 tp_item_gap = 0.15
 tp_item_x = tp_x + (tp_w - tp_item_w) / 2
@@ -137,15 +137,15 @@ for i, label in enumerate(tp_items):
 
 arrow(ax, (tp_x, tp_bottom + tp_height / 2), (envelope_x + envelope_w, tp_bottom + tp_height / 2), color=GREEN, style="<|-|>")
 
-# External Systems Layer (selebar IBANKCORE): Feeder SAP (pull dari DB), Cut-off/Cleansing,
+# Internal Support Layer (selebar IBANKCORE): Feeder SAP (pull dari DB), Cut-off/Cleansing,
 # DWH, Reporting Service — kotak independen tanpa garis relasi antar-sesama.
 # Feeder SAP -> SAP (sistem tujuan feed) digambar terpisah di baris paling bawah.
-# Laporan ke Regulator berasal dari kotak External Systems Layer (bukan dari sub-servicenya),
+# Laporan ke Regulator berasal dari kotak Internal Support Layer (bukan dari sub-servicenya),
 # sedangkan Dashboard tetap disuplai dari DWH.
 ext_x, ext_w = envelope_x, envelope_w
 ext_bottom, ext_height = 1.05, 1.1
 box(ax, ext_x, ext_bottom, ext_w, ext_height, "", fc="#FCEFDA", ec=ACCENT, lw=1.4, radius=0.03)
-ax.text(0.75, 2.08, "External Systems Layer", fontsize=9.5, fontweight="bold", color=ACCENT, va="top")
+ax.text(0.75, 2.08, "Internal Support Layer", fontsize=9.5, fontweight="bold", color=ACCENT, va="top")
 
 ext_items = [
     "Feeder SAP\n(Pull dari DB)",
