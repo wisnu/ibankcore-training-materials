@@ -77,13 +77,16 @@ fig, ax = new_fig(13.5, 8.5)
 ax.text(6.75, 8.15, "Arsitektur Modul IBANKCORE", ha="center", fontsize=17, fontweight="bold", color=NAVY)
 ax.text(6.75, 7.72, "Core Banking Multi-Modul & Sistem di Sekitarnya", ha="center", fontsize=10.5, color=GREY)
 
+box(ax, 0.45, 6.65, 12.8, 1.05, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
+ax.text(0.75, 7.65, "Channel Layer", fontsize=9.5, fontweight="bold", color=BLUE, va="top")
+
 channels = ["Teller /\nBranch", "ATM / EDC", "Mobile &\nInternet Banking", "E-Channel /\nAPI Gateway"]
 cx = 0.6
 cw = 3.0
 for i, c in enumerate(channels):
     box(ax, cx + i * (cw + 0.15), 6.75, cw, 0.75, c, fc=WHITE, ec=STEEL, tc=NAVY, fs=9.5)
 
-arrow(ax, (6.75, 6.75), (6.75, 6.35), color=STEEL)
+arrow(ax, (6.75, 6.65), (6.75, 6.35), color=STEEL)
 
 envelope_x, envelope_w = 0.5, 12.5
 box(ax, envelope_x, 2.35, envelope_w, 4.0, "", fc="#F5F8FC", ec=BLUE, lw=1.6, radius=0.03)
@@ -111,7 +114,7 @@ box(ax, 10.9, 1.1, 2.1, 0.85, "Feeder SAP\n(Pull dari DB)", fc="#FCEFDA", ec=ACC
 arrow(ax, (11.95, 1.95), (10.9, 2.9), color=ACCENT, connectionstyle="arc3,rad=0.2", ls="--")
 
 surround_items = [
-    "Payment Switching /\nSwitching Gateway",
+    "Switching-CGS\n(Akses Langsung DB)",
     "Regulator\nOJK / BI Reporting",
     "Kantor Akuntan /\nExternal Audit",
 ]
@@ -121,9 +124,16 @@ surround_row_w = len(surround_items) * surround_w + (len(surround_items) - 1) * 
 surround_start_x = envelope_x + (envelope_w - surround_row_w) / 2
 surround = [(label, surround_start_x + i * (surround_w + surround_gap)) for i, label in enumerate(surround_items)]
 for label, x in surround:
-    box(ax, x, 0.35, 2.5, 0.9, label, fc=WHITE, ec=GREY, tc=NAVY, fs=9.2)
     xc = x + 1.25
-    arrow(ax, (xc, 2.35), (xc, 1.25), color=GREY, connectionstyle="arc3,rad=0.0")
+    if "Switching" in label:
+        # Payment Switching punya akses langsung ke DB Core (setup infrastruktur/DB link,
+        # bukan lewat lapisan aplikasi/API seperti kanal lain) — gaya visual disamakan
+        # dengan Feeder SAP: warna accent + garis putus-putus.
+        box(ax, x, 0.35, 2.5, 0.9, label, fc="#FCEFDA", ec=ACCENT, tc=NAVY, fs=9.2)
+        arrow(ax, (xc, 1.25), (xc, 2.35), color=ACCENT, ls="--", connectionstyle="arc3,rad=0.0")
+    else:
+        box(ax, x, 0.35, 2.5, 0.9, label, fc=WHITE, ec=GREY, tc=NAVY, fs=9.2)
+        arrow(ax, (xc, 2.35), (xc, 1.25), color=GREY, connectionstyle="arc3,rad=0.0")
 
 fig.savefig(os.path.join(OUT_DIR, "01_arsitektur_ibankcore.png"), dpi=200, bbox_inches="tight", facecolor="white")
 plt.close(fig)
@@ -240,6 +250,42 @@ box(ax, 6.5, 0.35, 6.0, 1.35,
     fc="#FCEFDA", ec=ACCENT, tc=NAVY, fs=8.8, bold=False)
 
 fig.savefig(os.path.join(OUT_DIR, "05_struktur_organisasi.png"), dpi=200, bbox_inches="tight", facecolor="white")
+plt.close(fig)
+
+# =====================================================================
+# DIAGRAM 6 — Sistem Sekitar Khusus PT Pos: PGC & CMS
+# (berdasarkan konfirmasi bisnis, bukan hasil verifikasi kode)
+# =====================================================================
+fig, ax = new_fig(13, 7.2)
+ax.text(6.5, 6.75, "Sistem Sekitar Khusus PT Pos: PGC & CMS", ha="center", fontsize=16, fontweight="bold", color=NAVY)
+ax.text(6.5, 6.32, "Penyaluran PGC (Pos Giro Cash) melalui CMS Korporat & Kanal PT Pos", ha="center", fontsize=10, color=GREY)
+
+ax.text(6.5, 5.85, "Catatan: berdasarkan konfirmasi bisnis — PGC & CMS tidak ditemukan pada eksplorasi source code core/enterprise", ha="center", va="center", fontsize=7.5, color=ACCENT, style="italic")
+
+box(ax, 0.5, 4.35, 2.9, 1.1, "Instansi Pemerintah /\nHimbara (Penyalur PGC)", fc=BG_CARD, ec=BLUE_LIGHT, tc=NAVY, fs=9.3)
+box(ax, 4.15, 4.35, 2.9, 1.1, "CMS\n(Cash Management System)", fc="#FCEFDA", ec=ACCENT, tc=NAVY, fs=10)
+arrow(ax, (3.4, 4.9), (4.15, 4.9), color=STEEL, lw=1.8)
+ax.text(3.775, 5.65, "instruksi\npenyaluran", ha="center", va="center", fontsize=7.6, color=GREY, style="italic")
+
+box(ax, 7.8, 4.35, 4.2, 1.1, "IBANKCORE (PT Pos)\nProses Penyaluran PGC", fc=NAVY, ec=NAVY, tc=WHITE, fs=10)
+arrow(ax, (7.05, 4.9), (7.8, 4.9), color=STEEL, lw=1.8)
+
+channels = [
+    ("Loket / Counter\n(Tunai)", 0.7),
+    ("QRIS\n(Non-Tunai)", 4.85),
+    ("Kredit Rekening\n(Tabungan)", 9.0),
+]
+for label, x in channels:
+    box(ax, x, 2.1, 3.0, 1.0, label, fc="#F5F8FC", ec=STEEL, tc=NAVY, fs=9.5)
+    xc_top = x + 1.5
+    arrow(ax, (9.9, 4.35), (xc_top, 3.1), color=STEEL, lw=1.4)
+
+box(ax, 3.6, 0.35, 5.8, 1.0, "Penerima Manfaat PGC", fc=BG_CARD, ec=GREEN, tc=NAVY, fs=10)
+for label, x in channels:
+    xc = x + 1.5
+    arrow(ax, (xc, 2.1), (6.5, 1.35), color=GREEN, lw=1.4)
+
+fig.savefig(os.path.join(OUT_DIR, "06_pgc_cms.png"), dpi=200, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 
 print("done:", OUT_DIR)

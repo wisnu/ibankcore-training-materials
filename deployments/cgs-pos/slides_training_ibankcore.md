@@ -59,6 +59,25 @@ rows:
   - ["Internal Account", "Rekening internal bank (GL, suspense)"]
   - ["Customer", "Data induk nasabah (CIF)"]
 ===
+layout: two-column
+kicker: Bagian 1
+title: "Tiga Aplikasi: Core, Enterprise & Switching-CGS"
+left:
+  panel: dark
+  heading: "Core & Enterprise"
+  intro: "Python, akses DB lewat lapisan aplikasi sendiri:"
+  bullets:
+    - "Enterprise — platform/administratif (user, cabang, otorisasi)"
+    - "Core — mesin transaksi & produk perbankan"
+right:
+  panel: light
+  heading: "Switching-CGS (Go)"
+  intro: "Modernisasi switching dari Python legacy:"
+  bullets:
+    - "Microservice: core, jalin/QRIS, bca, topup, dll — BL2 (TCP) & gRPC"
+    - "Redis untuk job-queue/idempotency, deploy Docker/Kubernetes"
+    - "Akses langsung ke Oracle — skema sama persis dengan core/enterprise"
+===
 layout: image
 kicker: Bagian 1
 title: Struktur Organisasi — Wilayah, Cabang & Atribut Kantor
@@ -182,6 +201,68 @@ right:
   bullets:
     - "Pelaporan berkala ke OJK/BI (laporan keuangan, transaksi, kepatuhan)"
     - "Jejak data yang tertelusur untuk kebutuhan audit eksternal"
+===
+layout: two-column
+kicker: Bagian 5
+title: Payment Switching — Akses Langsung DB
+left:
+  panel: dark
+  heading: "Payment Switching"
+  intro: "Berbeda dari kanal lain (QRIS, host-to-host, REST API):"
+  bullets:
+    - "Akses langsung ke basis data Core, bukan lewat lapisan aplikasi/API"
+    - "Konfigurasi di level infrastruktur/database (mis. database link)"
+    - "Terkonfirmasi: skema DB switching sama persis dengan skema core/enterprise"
+right:
+  panel: light
+  heading: "Implikasi Tata Kelola"
+  intro: "Perlu perhatian ekstra dibanding integrasi berbasis API:"
+  bullets:
+    - "Melewati lapisan validasi aplikasi Core"
+    - "Perubahan skema database berpotensi berdampak langsung ke switching"
+    - "Tidak terikat kontrak API yang terversi seperti kanal lain"
+===
+layout: image
+kicker: Bagian 5
+title: "Sistem Sekitar Khusus PT Pos: PGC & CMS"
+image: diagrams/06_pgc_cms.png
+===
+layout: two-column
+kicker: Bagian 5
+title: "PGC & CMS (Khusus PT Pos)"
+left:
+  panel: dark
+  heading: "CMS (Cash Management System)"
+  intro: "Kanal digital untuk institusi/korporat:"
+  bullets:
+    - "Instansi pemerintah/himbara kirim instruksi penyaluran massal (bulk disbursement)"
+    - "Berbeda dari modul internal 'Kas & Vault' — CMS murni kanal eksternal, bukan kas fisik"
+right:
+  panel: light
+  heading: "PGC (Pos Giro Cash)"
+  intro: "PT Pos sebagai agen penyalur ke penerima manfaat:"
+  bullets:
+    - "Loket/Counter (tunai), QRIS (non-tunai), atau kredit rekening tabungan"
+    - "Metode pencairan tergantung program PGC terkait"
+  note: "Berdasarkan konfirmasi bisnis — PGC & CMS tidak ditemukan pada eksplorasi source code core/enterprise."
+===
+layout: two-column
+kicker: Bagian 5
+title: "Verifikasi Identitas & OTP"
+left:
+  panel: dark
+  heading: "API KTP"
+  intro: "Verifikasi identitas nasabah:"
+  bullets:
+    - "Validasi data kependudukan"
+    - "Dipanggil aplikasi switching saat diperlukan"
+right:
+  panel: light
+  heading: "SMS API"
+  intro: "Otentikasi transaksi tambahan:"
+  bullets:
+    - "Pengiriman OTP (One-Time Password)"
+    - "Melengkapi verifikasi di luar PIN"
 ===
 layout: image
 kicker: Bagian 6

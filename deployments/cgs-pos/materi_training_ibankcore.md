@@ -65,6 +65,14 @@ Secara implementasi, IBANKCORE terdiri dari dua aplikasi terpisah namun saling t
 - **Aplikasi Core** — mesin transaksi & produk perbankan itu sendiri: logika akun, transaksi, jurnal, serta produk (Deposito, Tabungan, Teller, Corporate) dan integrasi kanal (QRIS, host-to-host, REST API). Aplikasi ini dideploy per-instansi/bank, ditandai dengan konfigurasi lingkungan terpisah seperti training, UAT, dan production.
 - Kedua aplikasi berbagi prinsip dan pola arsitektur yang sama (lapisan data, struktur transaksi), namun **enterprise** berfokus pada domain administrasi, keamanan, dan operasional platform, sedangkan **core** berfokus pada domain bisnis/produk.
 
+## 2.5 Aplikasi Ketiga: Switching (switching-cgs)
+
+Selain core dan enterprise (Bagian 2.4), pada deployment PT Pos terdapat **aplikasi ketiga yang berdiri sendiri**: proyek switching (nama internal "switching-cgs") — hasil modernisasi komponen switching pembayaran dari Python legacy ke **Go**.
+
+- **Arsitektur microservice** — terdiri dari beberapa service terpisah (mis. core, core-hin, core-inq, core-rev, bca, jalin/QRIS, topup), masing-masing mendukung dua protokol: **BL2 (TCP)** untuk kompatibilitas ATM/EDC legacy, dan **gRPC** untuk klien modern. **Redis** dipakai sebagai job-queue/state-tracking untuk idempotency & recovery, dideploy via Docker/Kubernetes.
+- **Akses langsung ke database Core** — berbeda dari core/enterprise yang mengakses data melalui lapisan aplikasinya sendiri, switching-cgs terhubung **langsung ke Oracle** dengan skema (`ibcoreprod`/`ibentprod`) yang sama persis dengan skema core/enterprise, lengkap dengan modul query per-tabel (akun, transaksi, CIF, dsb.) — bukan lewat API. Pola ini konsisten dipakai baik untuk switching pembayaran umum (Bagian 7.5) maupun QRIS (menggantikan/melengkapi implementasi QRIS sisi core, Bagian 7.2), serta integrasi verifikasi identitas & OTP (Bagian 7.7).
+- **Implikasi arsitektur** — dengan tiga aplikasi (core, enterprise, switching-cgs) yang saling terhubung ke satu database Oracle yang sama, perubahan skema database berdampak lintas aplikasi dan perlu dikoordinasikan, tidak cukup diuji di satu aplikasi saja.
+
 # 3. Manajemen Cabang, Departemen & User
 
 Selain modul-modul fungsional (Funding, Accounting, Treasury, dsb.), IBANKCORE juga memiliki lapisan struktur organisasi — cabang, departemen, dan user — yang menjadi atribut wajib pada hampir setiap transaksi maupun aktivitas sistem. Lapisan ini dikelola terutama melalui modul Enterprise dan Customer.
@@ -193,7 +201,7 @@ Sebagai entitas yang diawasi OJK dan BI, IBANKCORE perlu mendukung pelaporan ber
 
 ## 7.2 QRIS & Virtual Account
 
-- **QRIS** — kanal pembayaran berbasis kode QR standar nasional; transaksi QRIS masuk melalui integrasi channel pihak ketiga dan diselesaikan (settlement) ke rekening tujuan melalui proses tersendiri.
+- **QRIS** — kanal pembayaran berbasis kode QR standar nasional; transaksi QRIS masuk melalui integrasi channel pihak ketiga dan diselesaikan (settlement) ke rekening tujuan melalui proses tersendiri. Pemrosesan QRIS ditangani oleh service `jalin` pada aplikasi switching-cgs (Bagian 2.5), dengan pola akses langsung ke database Core yang sama seperti switching pembayaran lainnya.
 - **Virtual Account (VA)** — nomor rekening virtual yang dipetakan ke rekening nasabah/tujuan sebenarnya, umumnya dipakai untuk penagihan (billing) atau penerimaan pembayaran; pencocokan (matching) pembayaran VA dilakukan secara terjadwal (batch).
 
 ## 7.3 Host-to-Host & REST API
@@ -203,6 +211,32 @@ Selain kanal konvensional, IBANKCORE menyediakan integrasi host-to-host serta RE
 ## 7.4 Feeder SAP (Integrasi Akuntansi Eksternal)
 
 Untuk kebutuhan konsolidasi keuangan pada level korporasi/holding, posting akuntansi diambil (pull) secara batch oleh mekanisme Feeder SAP langsung dari basis data Core, sebagai pelengkap pencatatan GL internal pada modul Accounting. Pendekatan ini berbeda dari pola push/event-driven — sistem Core tidak secara aktif mengirim data, melainkan Feeder SAP yang menjalankan proses ekstraksi terjadwal terhadap database.
+
+## 7.5 Payment Switching
+
+Payment Switching (switching pembayaran antar kanal/ATM-EDC) ditangani oleh aplikasi switching-cgs (Bagian 2.5) dan memiliki **akses langsung ke basis data Core** — bukan melalui lapisan aplikasi/API seperti kanal-kanal lain (host-to-host, REST API di atas). Ini merupakan konfigurasi pada level infrastruktur/database (mis. database link), bukan bagian dari kode aplikasi Core itu sendiri.
+
+> **Catatan**: pola integrasi ini serupa dengan Feeder SAP (akses langsung ke database, bukan lewat API), namun perlu diperlakukan dengan perhatian ekstra dari sisi keamanan & tata kelola data karena melewati lapisan validasi aplikasi Core — perubahan skema database di masa depan berpotensi berdampak langsung ke switching tanpa melalui kontrak API yang terversi.
+
+## 7.6 Sistem Sekitar Khusus PT Pos: PGC & CMS
+
+Di luar sistem sekitar generik yang telah dibahas, deployment PT Pos memiliki dua interaksi tambahan yang khas dengan perannya sebagai agen penyalur dana bantuan/tunai.
+
+> **Catatan**: bagian ini disusun berdasarkan konfirmasi bisnis langsung — modul PGC dan CMS tidak ditemukan pada eksplorasi source code `core`/`enterprise` yang tersedia untuk sesi ini, sehingga detail implementasinya belum terverifikasi ke kode.
+
+- **CMS (Cash Management System)** — portal digital bagi nasabah korporat/institusi (termasuk instansi pemerintah/himbara penyalur PGC) untuk mengirim instruksi pembayaran/penyaluran massal (bulk disbursement) serta memantau statusnya, tanpa transaksi manual satu per satu di cabang. CMS ini **berbeda** dari modul internal "Kas & Vault" (Bagian 6) — CMS adalah kanal digital eksternal untuk institusi, bukan pengelolaan kas fisik cabang.
+- **PGC (Pos Giro Cash)** — PT Pos bertindak sebagai agen penyalur dana bantuan/tunai (mis. bantuan sosial pemerintah) ke penerima manfaat. Instruksi penyaluran diterima dari instansi pemerintah/himbara (via CMS), lalu direalisasikan melalui salah satu kanal PT Pos: loket/counter (tunai), QRIS (non-tunai), atau kredit ke rekening tabungan penerima — tergantung metode pencairan yang ditetapkan program PGC terkait.
+
+![Gambar 7.1 — Sistem Sekitar Khusus PT Pos: PGC & CMS](diagrams/06_pgc_cms.png)
+
+## 7.7 Verifikasi Identitas & OTP: API KTP dan SMS API
+
+Aplikasi switching juga terhubung ke dua sistem verifikasi tambahan yang mendukung proses transaksi/layanan nasabah:
+
+- **API KTP** — layanan verifikasi identitas nasabah (validasi data kependudukan) yang dipanggil oleh aplikasi switching saat diperlukan, mis. pada proses yang mensyaratkan pengecekan identitas.
+- **SMS API** — layanan pengiriman SMS untuk kebutuhan One-Time Password (OTP), mendukung proses otentikasi transaksi yang memerlukan verifikasi tambahan di luar PIN.
+
+Kedua integrasi ini ditemukan pada konfigurasi aplikasi switching, melengkapi gambaran sistem sekitar yang berinteraksi dengan ekosistem IBANKCORE di PT Pos.
 
 # 8. Contoh Proses Bisnis
 
